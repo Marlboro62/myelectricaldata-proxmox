@@ -1,3 +1,10 @@
+## ☕ Soutenir
+
+Si ce script vous fait gagner du temps ou vous rend service, vous pouvez soutenir son développement :
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-d32f2f?logo=buymeacoffee&logoColor=white&style=flat)](https://buymeacoffee.com/marlboro62)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?logo=kofi&logoColor=white&style=flat)](https://ko-fi.com/nothing_one)
+
 # MyElectricalData v2 — Script d'installation Proxmox (LXC)
 
 Installe **MyElectricalData v2 en mode client** dans un conteneur LXC Proxmox, en **une seule commande**, sans Docker.
