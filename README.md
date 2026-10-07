@@ -191,13 +191,6 @@ pct stop 120 && pct destroy 120
 
 Ce script n'est **pas** un script officiel community-scripts : il utilise leur moteur, mais il est maintenu ici.
 
-## ☕ Soutenir
-
-Si ce script vous rend service :
-
-- [Buy Me a Coffee](https://buymeacoffee.com/marlboro62)
-- [Ko-fi](https://ko-fi.com/nothing_one)
-
 ## 📜 Licence
 
 MIT
