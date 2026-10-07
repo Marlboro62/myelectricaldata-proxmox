@@ -68,6 +68,17 @@ function update_script() {
   exit
 }
 
+if command -v pveversion >/dev/null 2>&1; then
+  if [[ -z "${var_med_client_id:-}" ]]; then
+    read -rp "MyElectricalData Client ID (cli_...): " var_med_client_id
+  fi
+  if [[ -z "${var_med_client_secret:-}" ]]; then
+    read -rsp "MyElectricalData Client Secret: " var_med_client_secret
+    echo
+  fi
+  export var_med_client_id var_med_client_secret
+fi
+
 start
 build_container
 description
