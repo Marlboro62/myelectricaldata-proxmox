@@ -34,11 +34,11 @@ Collez cette commande :
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/ct/myelectricaldata.sh)"
 ```
 
-1. Choisissez **Default Settings** (ou **Advanced** pour changer l'ID, le stockage, l'IP, la RAM…)
-2. Pendant l'installation, le script vous demande votre **Client ID** puis votre **Client Secret** : collez-les
+1. Le script vous demande d'abord votre **Client ID**, puis votre **Client Secret** : collez-les et validez avec **Entrée**
+   - Le secret ne s'affiche pas pendant la saisie, c'est normal (comme un mot de passe)
+   - Vous pouvez laisser vide et les ajouter plus tard (voir [Modifier les identifiants API](#modifier-les-identifiants-api))
+2. Choisissez **Default Settings** (ou **Advanced** pour changer l'ID, le stockage, l'IP, la RAM…)
 3. Patientez quelques minutes (la compilation de l'interface est l'étape la plus longue)
-
-À la fin, le script affiche l'adresse de l'interface :
 
 ```
 🌐  http://192.168.1.XXX:8100
