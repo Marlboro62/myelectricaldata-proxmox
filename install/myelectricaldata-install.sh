@@ -13,9 +13,6 @@ setting_up_container
 network_check
 update_os
 
-var_med_client_id=$(prompt_input_required "MyElectricalData Client ID (cli_...):" "" 300 "var_med_client_id")
-var_med_client_secret=$(prompt_input_required "MyElectricalData Client Secret:" "" 300 "var_med_client_secret")
-
 msg_info "Installing Dependencies"
 $STD apt install -y nginx
 msg_ok "Installed Dependencies"
