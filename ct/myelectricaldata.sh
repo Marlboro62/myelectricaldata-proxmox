@@ -18,9 +18,6 @@ var_version="${var_version:-13}"
 var_unprivileged="${var_unprivileged:-1}"
 #var_arm64="${var_arm64:-no}" # unset = ask the user; set yes/no only when verified
 
-export var_med_client_id="${var_med_client_id:-}"
-export var_med_client_secret="${var_med_client_secret:-}"
-
 header_info "$APP"
 variables
 color
