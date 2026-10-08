@@ -1,17 +1,23 @@
-## ☕ Soutenir
-
-Si ce script vous fait gagner du temps ou vous rend service, vous pouvez soutenir son développement :
-
-[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-d32f2f?logo=buymeacoffee&logoColor=white&style=flat)](https://buymeacoffee.com/marlboro62)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-FF5E5B?logo=kofi&logoColor=white&style=flat)](https://ko-fi.com/nothing_one)
-
 # MyElectricalData v2 — Script d'installation Proxmox (LXC)
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-d32f2f?logo=buymeacoffee&logoColor=white&style=flat)](https://buymeacoffee.com/marlboro62) [![Ko-fi](https://img.shields.io/badge/Ko--fi-ff5e5b?logo=kofi&logoColor=white&style=flat)](https://ko-fi.com/nothing_one)
 
 Installe **MyElectricalData v2 en mode client** dans un conteneur LXC Proxmox, en **une seule commande**, sans Docker.
 
 Le script crée le conteneur, installe PostgreSQL, le backend, l'interface web et le service, puis lance une première synchronisation de vos données Linky.
 
 > Vous utilisez Home Assistant OS ? Préférez l'add-on : [Marlboro62/hassio-addons](https://github.com/Marlboro62/hassio-addons).
+
+## 🧩 Fait partie de l'écosystème MyElectricalData v2
+
+Ces projets sont **non officiels**, maintenus par Marlboro62, sans lien avec l'équipe MyElectricalData. Ils s'appuient sur le [mode client de MyElectricalData v2](https://github.com/MyElectricalData/myelectricaldata_new).
+
+| Projet | Rôle |
+| --- | --- |
+| [Add-on Home Assistant](https://github.com/Marlboro62/hassio-addons) | Installe le mode client v2 dans Home Assistant (interface web, synchro Linky/Tempo, PostgreSQL intégré) |
+| **Script Proxmox (LXC) (ce dépôt)** | Déploie le mode client v2 dans un conteneur LXC Proxmox, sans Docker |
+| [Carte Lovelace](https://github.com/Marlboro62/content-card-linky-v2) | Affiche conso, Tempo, coût et puissance max dans un tableau de bord Home Assistant |
+| [Dashboards Grafana](https://github.com/Marlboro62/myelectricaldata-v2-grafana) | Analyse la base PostgreSQL de l'add-on (Linky, Tempo, coûts) |
 
 ---
 
@@ -59,6 +65,8 @@ Vous pouvez fournir les identifiants directement dans la commande :
 var_med_client_id="cli_xxxxxxxx" var_med_client_secret="xxxxxxxx" \
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/ct/myelectricaldata.sh)"
 ```
+
+> ⚠️ Le secret saisi ainsi reste dans l'historique du shell du nœud Proxmox. Préférez la saisie interactive ci-dessus, ou supprimez ensuite la ligne de l'historique.
 
 ### Ressources par défaut
 
@@ -176,7 +184,7 @@ Un problème non listé ? Ouvrez une [issue](https://github.com/Marlboro62/myele
 
 ## 🗑️ Désinstallation
 
-Depuis le shell du nœud Proxmox :
+Depuis le shell du nœud Proxmox (remplacez 120 par l'ID de votre conteneur, **vérifiez-le avant de lancer la commande** : la suppression est définitive) :
 
 ```bash
 pct stop 120 && pct destroy 120
