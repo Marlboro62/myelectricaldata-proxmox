@@ -1,23 +1,23 @@
-# MyElectricalData v2 — Script d'installation Proxmox (LXC)
+# MyElectricalData new — Script d'installation Proxmox (LXC)
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-d32f2f?logo=buymeacoffee&logoColor=white&style=flat)](https://buymeacoffee.com/marlboro62) [![Ko-fi](https://img.shields.io/badge/Ko--fi-ff5e5b?logo=kofi&logoColor=white&style=flat)](https://ko-fi.com/nothing_one)
 
-Installe **MyElectricalData v2 en mode client** dans un conteneur LXC Proxmox, en **une seule commande**, sans Docker.
+Installe **MyElectricalData new en mode client** dans un conteneur LXC Proxmox, en **une seule commande**, sans Docker.
 
 Le script crée le conteneur, installe PostgreSQL, le backend, l'interface web et le service, puis lance une première synchronisation de vos données Linky.
 
 > Vous utilisez Home Assistant OS ? Préférez l'add-on : [Marlboro62/hassio-addons](https://github.com/Marlboro62/hassio-addons).
 
-## 🧩 Fait partie de l'écosystème MyElectricalData v2
+## 🧩 Fait partie de l'écosystème MyElectricalData new
 
-Ces projets sont **non officiels**, maintenus par Marlboro62, sans lien avec l'équipe MyElectricalData. Ils s'appuient sur le [mode client de MyElectricalData v2](https://github.com/MyElectricalData/myelectricaldata_new).
+Ces projets sont **non officiels**, maintenus par Marlboro62, sans lien avec l'équipe MyElectricalData. Ils s'appuient sur le [mode client de MyElectricalData new](https://github.com/MyElectricalData/myelectricaldata_new), relié à la passerelle [www.v2.myelectricaldata.fr](https://www.v2.myelectricaldata.fr).
 
 | Projet | Rôle |
 | --- | --- |
-| [Add-on Home Assistant](https://github.com/Marlboro62/hassio-addons) | Installe le mode client v2 dans Home Assistant (interface web, synchro Linky/Tempo, PostgreSQL intégré) |
-| **Script Proxmox (LXC) (ce dépôt)** | Déploie le mode client v2 dans un conteneur LXC Proxmox, sans Docker |
-| [Carte Lovelace](https://github.com/Marlboro62/content-card-linky-v2) | Affiche conso, Tempo, coût et puissance max dans un tableau de bord Home Assistant |
-| [Dashboards Grafana](https://github.com/Marlboro62/myelectricaldata-v2-grafana) | Analyse la base PostgreSQL de l'add-on (Linky, Tempo, coûts) |
+| [Add-on Home Assistant](https://github.com/Marlboro62/hassio-addons) | Installe le mode client dans Home Assistant (interface web, synchro Linky/Tempo, PostgreSQL intégré) |
+| **Script Proxmox (LXC) (ce dépôt)** | Déploie le mode client dans un conteneur LXC Proxmox, sans Docker |
+| [Carte Lovelace](https://github.com/Marlboro62/content-card-linky-new) | Affiche conso, Tempo, coût et puissance max dans un tableau de bord Home Assistant |
+| [Dashboards Grafana](https://github.com/Marlboro62/myelectricaldata-new-grafana) | Analyse la base PostgreSQL de l'add-on (Linky, Tempo, coûts) |
 
 ---
 
@@ -85,9 +85,11 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricald
 
 ### Première synchronisation
 
-Au premier démarrage, une synchronisation se lance automatiquement (jusqu'à 3 ans d'historique). Elle peut prendre une à deux minutes. Ensuite, elle est faite **tous les jours à 6h00**.
+Au premier démarrage, une synchronisation se lance automatiquement (jusqu'à 3 ans d'historique journalier et 2 ans de courbe de charge). Elle peut prendre quelques minutes. Ensuite, elle est faite automatiquement plusieurs fois par jour (toutes les 30 minutes de 6h à 9h30, puis à 12h et 18h), soit une vingtaine d'appels à la passerelle par jour.
 
-Vous pouvez aussi la lancer à la main depuis le **Tableau de bord → Synchroniser**.
+Vous pouvez aussi la lancer à la main depuis le **Tableau de bord → Récupérer**.
+
+> ℹ️ La passerelle limite chaque compte à **1000 requêtes par jour avec cache** et **50 sans cache** (remise à zéro à minuit UTC). Évitez de faire tourner plusieurs instances (LXC, add-on, Docker) avec les mêmes identifiants.
 
 ### Modifier les identifiants API
 
@@ -123,9 +125,11 @@ systemctl restart myelectricaldata
 | `TZ` | Fuseau horaire (`Europe/Paris` par défaut) |
 | `DATABASE_URL` / `SECRET_KEY` | Générés automatiquement, **ne pas modifier** |
 
-### Home Assistant, MQTT, VictoriaMetrics
+### Home Assistant, MQTT, VictoriaMetrics, Jeedom
 
-Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT** et **VictoriaMetrics**.
+Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT**, **VictoriaMetrics** et **Jeedom**.
+
+Pensez aussi à choisir votre **offre** (fournisseur et tarif) sur la carte de votre PDL : sans elle, les coûts ne sont pas calculés.
 
 ---
 
