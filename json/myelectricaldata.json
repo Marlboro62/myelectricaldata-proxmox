@@ -16,7 +16,7 @@
     "pve"
   ],
   "logo": null,
-  "description": "Local client for the MyElectricalData gateway: imports Linky smart meter data from Enedis APIs and exports it to Home Assistant, MQTT or VictoriaMetrics.",
+  "description": "Local client for the MyElectricalData gateway: imports Linky smart meter data from Enedis APIs and exports it to Home Assistant or VictoriaMetrics.",
   "install_methods": [
     {
       "type": "default",
@@ -39,6 +39,10 @@
     {
       "text": "API credentials can be changed in /opt/myelectricaldata/.env, then run: systemctl restart myelectricaldata",
       "type": "info"
+    },
+    {
+      "text": "The MyElectricalData gateway allows 50 uncached requests per day per account (reset at midnight UTC): do not run several instances with the same credentials.",
+      "type": "warning"
     }
   ],
   "app_vars": [

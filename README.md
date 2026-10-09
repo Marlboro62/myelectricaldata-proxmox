@@ -125,11 +125,13 @@ systemctl restart myelectricaldata
 | `TZ` | Fuseau horaire (`Europe/Paris` par défaut) |
 | `DATABASE_URL` / `SECRET_KEY` | Générés automatiquement, **ne pas modifier** |
 
-### Home Assistant, MQTT, VictoriaMetrics
+### Home Assistant, VictoriaMetrics
 
-Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT** et **VictoriaMetrics**. Jeedom, Domoticz ou Node-RED peuvent lire les données publiées en MQTT.
+Les exports se configurent directement dans l'interface web, menus **Home Assistant** et **VictoriaMetrics**. L'export Home Assistant crée les capteurs (via MQTT) et alimente le tableau de bord Énergie. L'export MQTT générique n'est pas encore fonctionnel dans la version actuelle du projet MyElectricalData.
 
 Pensez aussi à choisir votre **offre** (fournisseur et tarif) sur la carte de votre PDL : sans elle, les coûts ne sont pas calculés.
+
+**Quota de la passerelle** : 1000 requêtes par jour avec cache, 50 sans cache (remise à zéro à minuit UTC). Le conteneur n'en consomme qu'une vingtaine par jour ; évitez de faire tourner plusieurs instances avec le même compte.
 
 ---
 
