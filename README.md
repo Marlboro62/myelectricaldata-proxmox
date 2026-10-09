@@ -125,9 +125,9 @@ systemctl restart myelectricaldata
 | `TZ` | Fuseau horaire (`Europe/Paris` par défaut) |
 | `DATABASE_URL` / `SECRET_KEY` | Générés automatiquement, **ne pas modifier** |
 
-### Home Assistant, MQTT, VictoriaMetrics, Jeedom
+### Home Assistant, MQTT, VictoriaMetrics
 
-Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT**, **VictoriaMetrics** et **Jeedom**.
+Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT** et **VictoriaMetrics**. Jeedom, Domoticz ou Node-RED peuvent lire les données publiées en MQTT.
 
 Pensez aussi à choisir votre **offre** (fournisseur et tarif) sur la carte de votre PDL : sans elle, les coûts ne sont pas calculés.
 
