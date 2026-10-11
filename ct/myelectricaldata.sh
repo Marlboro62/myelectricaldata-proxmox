@@ -49,6 +49,15 @@ function update_script() {
     $STD uv sync --no-dev --no-install-project
     msg_ok "Updated MyElectricalData Backend"
 
+    msg_info "Updating Version Check"
+    sed -i 's/setInterval(load,36e5)/setInterval(load,9e5)/' /usr/local/share/myelectricaldata/badge.js
+    if grep -q "^OnUnitActiveSec=1h$" /etc/systemd/system/myelectricaldata-version.timer 2>/dev/null; then
+      sed -i 's/^OnUnitActiveSec=1h$/OnUnitActiveSec=15min/; s/^Description=Hourly MyElectricalData version check$/Description=MyElectricalData version check every 15 minutes/' /etc/systemd/system/myelectricaldata-version.timer
+      systemctl daemon-reload
+      systemctl restart myelectricaldata-version.timer
+    fi
+    msg_ok "Updated Version Check"
+
     msg_info "Applying Local Patches"
     command -v patch >/dev/null || $STD apt install -y patch
     $STD /usr/local/bin/myelectricaldata-patches
