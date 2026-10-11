@@ -49,6 +49,11 @@ function update_script() {
     $STD uv sync --no-dev --no-install-project
     msg_ok "Updated MyElectricalData Backend"
 
+    msg_info "Applying Local Patches"
+    command -v patch >/dev/null || $STD apt install -y patch
+    $STD /usr/local/bin/myelectricaldata-patches
+    msg_ok "Applied Local Patches"
+
     msg_info "Building MyElectricalData Frontend"
     cd /opt/myelectricaldata/apps/web
     export VITE_API_BASE_URL=/api
