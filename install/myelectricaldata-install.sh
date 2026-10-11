@@ -14,7 +14,7 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
-$STD apt install -y nginx
+$STD apt install -y nginx patch
 msg_ok "Installed Dependencies"
 
 PG_VERSION="17" setup_postgresql
@@ -47,6 +47,27 @@ $STD uv sync --no-dev --no-install-project
 # Upstream hardcodes the Docker paths /app/static and /app/pyproject.toml
 ln -sfn /opt/myelectricaldata/apps/api /app
 msg_ok "Configured MyElectricalData Backend"
+
+msg_info "Applying Local Patches"
+cat <<'EOF' >/usr/local/bin/myelectricaldata-patches
+#!/usr/bin/env bash
+# Applies the local UI patches (e.g. "Passerelle" menu link) to the upstream sources
+REPO=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/patches
+cd /opt/myelectricaldata || exit 0
+for p in lien-passerelle.patch; do
+  if curl -fsSL "$REPO/$p" -o "/tmp/$p"; then
+    if patch -p1 -N --dry-run -s <"/tmp/$p" >/dev/null 2>&1; then
+      patch -p1 -N -s <"/tmp/$p" && echo "Applied $p"
+    else
+      echo "Skipped $p (already applied or not compatible with this version)"
+    fi
+    rm -f "/tmp/$p"
+  fi
+done
+EOF
+chmod +x /usr/local/bin/myelectricaldata-patches
+$STD /usr/local/bin/myelectricaldata-patches
+msg_ok "Applied Local Patches"
 
 msg_info "Building MyElectricalData Frontend"
 cd /opt/myelectricaldata/apps/web
