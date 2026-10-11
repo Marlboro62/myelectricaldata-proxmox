@@ -54,11 +54,13 @@ function update_script() {
     export VITE_API_BASE_URL=/api
     $STD npm ci
     $STD npm run build
+    cat /usr/local/share/myelectricaldata/badge.js >>/opt/myelectricaldata/apps/web/dist/env.js
     msg_ok "Built MyElectricalData Frontend"
 
     msg_info "Starting MyElectricalData"
     systemctl start myelectricaldata
     systemctl reload nginx
+    /usr/local/bin/myelectricaldata-version || true
     msg_ok "Started MyElectricalData"
     msg_ok "Updated successfully!"
   fi
