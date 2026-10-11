@@ -50,7 +50,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricald
 1. Le script vous demande d'abord votre **Client ID**, puis votre **Client Secret** : collez-les et validez avec **Entrée**
    - Le secret ne s'affiche pas pendant la saisie, c'est normal (comme un mot de passe)
    - Vous pouvez laisser vide et les ajouter plus tard (voir [Modifier les identifiants API](#modifier-les-identifiants-api))
-2. Choisissez **Default Settings** (ou **Advanced** pour changer l'ID, le stockage, l'IP, la RAM…)
+2. Choisissez **Default Install** (ou **Advanced Install** pour changer l'ID, le stockage, l'IP, la RAM…)
 3. Patientez quelques minutes (la compilation de l'interface est l'étape la plus longue)
 
 ```
@@ -144,6 +144,8 @@ update
 ```
 
 Le script vérifie la dernière version de MyElectricalData, la télécharge, conserve votre `.env`, applique les migrations de la base et redémarre le service.
+
+La version installée est affichée en bas à gauche de l'interface, sous « Préférences » : point vert si à jour, orange avec 1 version de retard, rouge à partir de 2. Elle s'affiche aussi à la connexion de la console du conteneur.
 
 ---
 
