@@ -62,6 +62,49 @@ function update_script() {
     cat /usr/local/share/myelectricaldata/badge.js >>/opt/myelectricaldata/apps/web/dist/env.js
     msg_ok "Built MyElectricalData Frontend"
 
+    if ! grep -q "no-cache" /etc/nginx/sites-available/myelectricaldata; then
+      msg_info "Updating Nginx Configuration"
+      cat <<'EOF' >/etc/nginx/sites-available/myelectricaldata
+server {
+    listen 8100;
+    server_name _;
+
+    root /opt/myelectricaldata/apps/web/dist;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+
+    # Always revalidate the entry files so a new version is picked up after an update
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+    location = /env.js {
+        add_header Cache-Control "no-cache";
+    }
+    location = /lxc-version.json {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Build assets have a content hash in their name: cache them for a long time
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+      msg_ok "Updated Nginx Configuration"
+    fi
+
     msg_info "Starting MyElectricalData"
     systemctl start myelectricaldata
     systemctl reload nginx
