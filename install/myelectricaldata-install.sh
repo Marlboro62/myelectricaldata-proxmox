@@ -142,6 +142,22 @@ server {
         proxy_read_timeout 300s;
     }
 
+    # Always revalidate the entry files so a new version is picked up after an update
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+    location = /env.js {
+        add_header Cache-Control "no-cache";
+    }
+    location = /lxc-version.json {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Build assets have a content hash in their name: cache them for a long time
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }
