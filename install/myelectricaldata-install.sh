@@ -79,7 +79,7 @@ msg_ok "Built MyElectricalData Frontend"
 msg_info "Setting up Version Badge"
 mkdir -p /usr/local/share/myelectricaldata
 cat <<'EOF' >/usr/local/share/myelectricaldata/badge.js
-(function(){var SRC="/lxc-version.json",LINK="https://github.com/Marlboro62/myelectricaldata-proxmox#-mise-%C3%A0-jour",HINT="Tapez update dans la console du conteneur Proxmox",st=null,busy=false;function view(d){var n=d.behind||(d.update?1:0),c=n>=2?"#ef4444":n?"#f59e0b":"#22c55e",t="v"+d.version+(n>=2?" · <b>"+n+" versions de retard</b>":n?" · <b>"+d.latest+" disponible</b>":"");return{n:n,c:c,h:'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:'+c+'"></span>'+t}}function paint(){if(!st||busy)return;busy=true;try{var v=view(st);document.querySelectorAll("[data-app-version]").forEach(function(e){e.style.display="none"});document.querySelectorAll('a[href$="/preferences"]').forEach(function(a){if(a.textContent.indexOf("Préférences")<0)return;var e=a.nextElementSibling;if(!e||!e.classList||!e.classList.contains("med-ver")){e=document.createElement("a");e.className="med-ver";e.target="_blank";e.rel="noopener";e.href=LINK;e.style.cssText="display:block;padding:8px 12px 0;font:12px/1.4 system-ui,sans-serif;text-decoration:none";a.insertAdjacentElement("afterend",e)}if(e.getAttribute("data-h")!==v.h){e.innerHTML=v.h;e.setAttribute("data-h",v.h)}e.style.color=v.n>=2?"#ef4444":v.n?"#f59e0b":"#9ca3af";e.title=v.n?HINT+" (dernière version : "+st.latest+")":"À jour"})}finally{busy=false}}function load(){fetch("/lxc-version.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.version){st=d;paint()}}).catch(function(){})}function start(){load();setInterval(load,36e5);var q=false;new MutationObserver(function(){if(q)return;q=true;requestAnimationFrame(function(){q=false;paint()})}).observe(document.body,{childList:true,subtree:true})}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();
+(function(){var SRC="/lxc-version.json",LINK="https://github.com/Marlboro62/myelectricaldata-proxmox#-mise-%C3%A0-jour",HINT="Tapez update dans la console du conteneur Proxmox",st=null,busy=false;function view(d){var n=d.behind||(d.update?1:0),c=n>=2?"#ef4444":n?"#f59e0b":"#22c55e",t="v"+d.version+(n>=2?" · <b>"+n+" versions de retard</b>":n?" · <b>"+d.latest+" disponible</b>":"");return{n:n,c:c,h:'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:'+c+'"></span>'+t}}function paint(){if(!st||busy)return;busy=true;try{var v=view(st);document.querySelectorAll("[data-app-version]").forEach(function(e){e.style.display="none"});document.querySelectorAll('a[href$="/preferences"]').forEach(function(a){if(a.textContent.indexOf("Préférences")<0)return;var e=a.nextElementSibling;if(!e||!e.classList||!e.classList.contains("med-ver")){e=document.createElement("a");e.className="med-ver";e.target="_blank";e.rel="noopener";e.href=LINK;e.style.cssText="display:block;padding:8px 12px 0;font:12px/1.4 system-ui,sans-serif;text-decoration:none";a.insertAdjacentElement("afterend",e)}if(e.getAttribute("data-h")!==v.h){e.innerHTML=v.h;e.setAttribute("data-h",v.h)}e.style.color=v.n>=2?"#ef4444":v.n?"#f59e0b":"#9ca3af";e.title=v.n?HINT+" (dernière version : "+st.latest+")":"À jour"})}finally{busy=false}}function load(){fetch("/lxc-version.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.version){st=d;paint()}}).catch(function(){})}function start(){load();setInterval(load,9e5);var q=false;new MutationObserver(function(){if(q)return;q=true;requestAnimationFrame(function(){q=false;paint()})}).observe(document.body,{childList:true,subtree:true})}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();
 EOF
 cat /usr/local/share/myelectricaldata/badge.js >>/opt/myelectricaldata/apps/web/dist/env.js
 cat <<'EOF' >/usr/local/bin/myelectricaldata-version
@@ -111,11 +111,11 @@ ExecStart=/usr/local/bin/myelectricaldata-version
 EOF
 cat <<'EOF' >/etc/systemd/system/myelectricaldata-version.timer
 [Unit]
-Description=Hourly MyElectricalData version check
+Description=MyElectricalData version check every 15 minutes
 
 [Timer]
 OnBootSec=1min
-OnUnitActiveSec=1h
+OnUnitActiveSec=15min
 
 [Install]
 WantedBy=timers.target
