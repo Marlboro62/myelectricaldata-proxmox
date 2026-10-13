@@ -60,6 +60,7 @@ function update_script() {
 
     msg_info "Applying Local Patches"
     command -v patch >/dev/null || $STD apt install -y patch
+    sed -i 's/^for p in lien-passerelle.patch; do$/for p in lien-passerelle.patch mqtt-scheduler.patch; do/' /usr/local/bin/myelectricaldata-patches
     $STD /usr/local/bin/myelectricaldata-patches
     msg_ok "Applied Local Patches"
 

@@ -54,7 +54,7 @@ cat <<'EOF' >/usr/local/bin/myelectricaldata-patches
 # Applies the local UI patches (e.g. "Passerelle" menu link) to the upstream sources
 REPO=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/patches
 cd /opt/myelectricaldata || exit 0
-for p in lien-passerelle.patch; do
+for p in lien-passerelle.patch mqtt-scheduler.patch; do
   if curl -fsSL "$REPO/$p" -o "/tmp/$p"; then
     if patch -p1 -N --dry-run -s <"/tmp/$p" >/dev/null 2>&1; then
       patch -p1 -N -s <"/tmp/$p" && echo "Applied $p"

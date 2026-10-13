@@ -127,7 +127,14 @@ systemctl restart myelectricaldata
 
 ### Home Assistant, VictoriaMetrics
 
-Les exports se configurent directement dans l'interface web, menus **Home Assistant** et **VictoriaMetrics**. L'export Home Assistant crée les capteurs (via MQTT) et alimente le tableau de bord Énergie. L'export MQTT générique n'est pas encore fonctionnel dans la version actuelle du projet MyElectricalData.
+Les exports se configurent directement dans l'interface web, menus **Home Assistant**, **MQTT** et **VictoriaMetrics**. L'export Home Assistant crée les capteurs (via MQTT) et alimente le tableau de bord Énergie. L'export MQTT générique publie les statistiques de consommation, Tempo et EcoWatt sur votre broker ; il est lancé automatiquement par le planificateur grâce au correctif `mqtt-scheduler.patch` appliqué par le script (correctif de la PR amont [#119](https://github.com/MyElectricalData/myelectricaldata_new/pull/119), issue [#134](https://github.com/MyElectricalData/myelectricaldata_new/issues/134)).
+
+> Conteneur installé avant ce correctif ? Appliquez-le sans attendre la prochaine version, dans la console du conteneur :
+>
+> ```bash
+> sed -i 's/^for p in lien-passerelle.patch; do$/for p in lien-passerelle.patch mqtt-scheduler.patch; do/' /usr/local/bin/myelectricaldata-patches
+> myelectricaldata-patches && systemctl restart myelectricaldata
+> ```
 
 Pensez aussi à choisir votre **offre** (fournisseur et tarif) sur la carte de votre PDL : sans elle, les coûts ne sont pas calculés.
 
