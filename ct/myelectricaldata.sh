@@ -33,6 +33,12 @@ function update_script() {
     exit
   fi
 
+  # Import de l'historique v1 (MyElectricalData 2.7.0+) : commande toujours mise à jour
+  if curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/import-v1 -o /usr/local/bin/import-v1.new; then
+    mv /usr/local/bin/import-v1.new /usr/local/bin/import-v1
+    chmod +x /usr/local/bin/import-v1
+  fi
+
   if check_for_gh_release "myelectricaldata" "MyElectricalData/myelectricaldata_new"; then
     msg_info "Stopping MyElectricalData"
     systemctl stop myelectricaldata

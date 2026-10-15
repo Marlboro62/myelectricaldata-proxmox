@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# Importe l'historique de MyElectricalData v1 (cache.db) dans ce conteneur, avec l'outil officiel
+# scripts/import_v1.py (MyElectricalData 2.7.0 et suivantes).
+#
+#   import-v1 [--simulation] /chemin/vers/cache.db
+#
+# - consommation, production et puissance max, pour les PDL présents à la fois dans la v1 et ici ;
+# - aucune donnée existante n'est écrasée : la commande peut être relancée sans risque ;
+# - le cache.db n'est jamais modifié : l'outil travaille sur une copie, supprimée à la fin
+#   (elle contient les anciens jetons v1) ;
+# - une base v1 à révision Alembic inconnue (ex. d4f21c9a8b6e, add-on v1 d'alexbelgium) mais aux
+#   tables de données identiques est acceptée : seule la copie est alignée
+#   (https://github.com/MyElectricalData/myelectricaldata_new/issues/164).
+set -uo pipefail
+
+APP=/opt/myelectricaldata
+API=$APP/apps/api
+PY=$API/.venv/bin/python
+TOOL=$API/scripts/import_v1.py
+DB_NAME=myelectricaldata_client
+
+log() { echo "[import-v1] $*"; }
+usage() {
+  echo "Usage : import-v1 [--simulation] /chemin/vers/cache.db"
+  echo "  --simulation  compte ce qui serait importé, sans rien écrire"
+  exit "${1:-1}"
+}
+
+DRY_RUN=false
+SRC=""
+for arg in "$@"; do
+  case "$arg" in
+    --simulation | --dry-run) DRY_RUN=true ;;
+    -h | --help) usage 0 ;;
+    -*) usage ;;
+    *) SRC="$arg" ;;
+  esac
+done
+[ -n "$SRC" ] || usage
+
+if [ "$(id -u)" -ne 0 ]; then
+  log "À lancer en root (console du conteneur)"
+  exit 1
+fi
+if [ ! -f "$TOOL" ]; then
+  log "Outil d'import absent : MyElectricalData 2.7.0 ou plus récent est nécessaire (tapez : update)"
+  exit 1
+fi
+if [ ! -f "$SRC" ]; then
+  log "Fichier introuvable : $SRC"
+  exit 1
+fi
+if ! systemctl is-active -q myelectricaldata; then
+  log "Le service myelectricaldata n'est pas démarré : systemctl start myelectricaldata"
+  exit 1
+fi
+n=$(runuser -u postgres -- psql -tA -d "$DB_NAME" -c "SELECT count(*) FROM pdls" 2>/dev/null || echo 0)
+if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -eq 0 ]; then
+  log "Aucun PDL encore récupéré : ouvrez l'interface et attendez la première synchronisation, puis relancez"
+  exit 1
+fi
+log "$n PDL présent(s) dans MyElectricalData new"
+
+# --- Copie de travail ---
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+cp "$SRC" "$WORK/cache.db"
+for ext in -wal -shm; do [ -f "$SRC$ext" ] && cp "$SRC$ext" "$WORK/cache.db$ext"; done
+log "Lecture de $SRC"
+
+# --- Révision Alembic inconnue mais tables de données identiques : alignement de la copie ---
+"$PY" - "$WORK/cache.db" "$API/src/services/import_v1.py" <<'PY' || exit 1
+import re, sqlite3, sys
+db, tool = sys.argv[1:]
+m = re.search(r'V1_ALEMBIC_HEAD\s*=\s*"(\w+)"', open(tool, encoding="utf-8").read())
+if not m:
+    sys.exit(0)
+head = m.group(1)
+c = sqlite3.connect(db)
+try:
+    rev = c.execute("SELECT version_num FROM alembic_version").fetchone()
+except sqlite3.Error:
+    sys.exit(0)  # pas une base v1 : l'outil le dira
+rev = rev[0] if rev else None
+if rev == head:
+    sys.exit(0)
+needed = {
+    "usage_points": {"usage_point_id"},
+    "consumption_daily": {"usage_point_id", "date", "value", "blacklist", "fail_count"},
+    "production_daily": {"usage_point_id", "date", "value", "blacklist", "fail_count"},
+    "consumption_detail": {"usage_point_id", "date", "value", "interval"},
+    "production_detail": {"usage_point_id", "date", "value", "interval"},
+    "consumption_daily_max_power": {"usage_point_id", "date", "event_date", "value", "blacklist", "fail_count"},
+}
+missing = []
+for table, cols in needed.items():
+    have = {r[1] for r in c.execute(f"PRAGMA table_info({table})")}
+    missing += [f"{table}.{col}" for col in sorted(cols - have)]
+if missing:
+    print(f"[import-v1] Révision v1 {rev} inconnue et colonnes absentes : {', '.join(missing)}")
+    sys.exit(0)  # l'outil refusera la base avec son propre message
+c.execute("UPDATE alembic_version SET version_num = ?", (head,))
+c.commit()
+print(f"[import-v1] Révision v1 {rev} inconnue de l'outil, mais tables de données identiques : "
+      f"copie de travail alignée sur {head} (le fichier d'origine n'est pas modifié)")
+PY
+
+ARGS=("$WORK/cache.db")
+if [ "$DRY_RUN" = true ]; then
+  ARGS+=(--dry-run)
+  log "Mode simulation : rien ne sera écrit"
+else
+  BACKUP=/root/backup-avant-import-v1-$(date +%Y%m%d-%H%M%S).sql
+  log "Sauvegarde de la base dans $BACKUP"
+  if ! runuser -u postgres -- pg_dump "$DB_NAME" >"$BACKUP"; then
+    log "Sauvegarde impossible : import annulé, aucune donnée n'a été modifiée"
+    exit 1
+  fi
+  chmod 600 "$BACKUP"
+fi
+
+(
+  set -a
+  # shellcheck disable=SC1091
+  . "$APP/.env"
+  set +a
+  cd "$API" && PYTHONPATH="$API" "$PY" "$TOOL" "${ARGS[@]}"
+) 2>&1 | sed -u 's/^/[import-v1] /'
+rc=${PIPESTATUS[0]}
+
+if [ "$rc" -ne 0 ]; then
+  log "Import en échec (code $rc) : voir les lignes ci-dessus. Les données déjà présentes ne sont pas touchées."
+elif [ "$DRY_RUN" = true ]; then
+  log "Simulation terminée. Pour importer réellement : import-v1 $SRC"
+else
+  log "Import terminé. Vous pouvez supprimer $SRC du conteneur (il contient les anciens jetons v1)."
+fi
+exit "$rc"

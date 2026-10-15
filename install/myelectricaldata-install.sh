@@ -67,6 +67,11 @@ chmod +x /usr/local/bin/myelectricaldata-patches
 $STD /usr/local/bin/myelectricaldata-patches
 msg_ok "Applied Local Patches"
 
+msg_info "Installing import-v1 Command"
+curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/import-v1 -o /usr/local/bin/import-v1
+chmod +x /usr/local/bin/import-v1
+msg_ok "Installed import-v1 Command"
+
 msg_info "Building MyElectricalData Frontend"
 cd /opt/myelectricaldata/apps/web
 export VITE_API_BASE_URL=/api

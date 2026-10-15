@@ -149,6 +149,36 @@ La version installée est affichée en bas à gauche de l'interface, sous « Pr�
 
 ---
 
+## 📥 Reprendre l'historique de la v1
+
+Depuis MyElectricalData **2.7.0**, la commande `import-v1` reprend l'historique de l'ancienne version (`myelectricaldata_import`, add-on Home Assistant v1 compris) avec l'outil officiel : consommation, production et puissance max. Aucune requête n'est faite à la passerelle (aucun quota consommé) et **aucune donnée déjà présente n'est écrasée**.
+
+1. Arrêtez la v1, **sans modifier sa configuration** (retirer un PDL de la v1 efface ses données), et récupérez son fichier `cache.db` (dossier `data/` de la v1, ou `/config/myelectricaldata/` pour l'add-on Home Assistant).
+2. Copiez-le dans le conteneur, par exemple depuis l'hôte Proxmox (remplacez `113` par le numéro de votre conteneur) :
+
+   ```bash
+   pct push 113 /root/cache.db /root/cache.db
+   ```
+
+3. Dans la console du conteneur, lancez d'abord une **simulation** (rien n'est écrit, le bilan s'affiche) :
+
+   ```bash
+   import-v1 --simulation /root/cache.db
+   ```
+
+4. Si le bilan vous convient, lancez l'import réel, puis supprimez la copie (elle contient les anciens jetons v1) :
+
+   ```bash
+   import-v1 /root/cache.db
+   rm /root/cache.db
+   ```
+
+Une sauvegarde de la base est faite avant l'import réel dans `/root/backup-avant-import-v1-<date>.sql`. La commande peut être relancée sans risque : les dates déjà présentes ne sont jamais modifiées. Les PDL doivent déjà apparaître dans l'interface (attendez la première synchronisation).
+
+Une base v1 à révision inconnue de l'outil officiel (par exemple `d4f21c9a8b6e`, add-on v1 d'alexbelgium) mais aux tables de données identiques est acceptée : seule la copie de travail est ajustée ([issue #164](https://github.com/MyElectricalData/myelectricaldata_new/issues/164)).
+
+---
+
 ## 🛠️ Commandes utiles
 
 Toutes ces commandes se lancent **dans le conteneur**.
