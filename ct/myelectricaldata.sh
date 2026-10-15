@@ -46,7 +46,9 @@ function update_script() {
 
     msg_info "Updating MyElectricalData Backend"
     cd /opt/myelectricaldata/apps/api
-    $STD uv sync --no-dev --no-install-project
+    $STD uv sync --locked --no-dev --no-install-project
+    # Paths are package-relative since upstream 2.5.5 (PR #144): drop the old /app workaround
+    if [[ -L /app ]]; then rm -f /app; fi
     msg_ok "Updated MyElectricalData Backend"
 
     msg_info "Updating Version Check"
@@ -60,7 +62,8 @@ function update_script() {
 
     msg_info "Applying Local Patches"
     command -v patch >/dev/null || $STD apt install -y patch
-    sed -i 's/^for p in lien-passerelle.patch; do$/for p in lien-passerelle.patch mqtt-scheduler.patch; do/' /usr/local/bin/myelectricaldata-patches
+    # The MQTT scheduler fix is upstream since 2.5.1: only the "Passerelle" link patch remains
+    sed -i 's/^for p in .*; do$/for p in lien-passerelle.patch; do/' /usr/local/bin/myelectricaldata-patches
     $STD /usr/local/bin/myelectricaldata-patches
     msg_ok "Applied Local Patches"
 

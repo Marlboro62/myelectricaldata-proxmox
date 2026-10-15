@@ -43,9 +43,7 @@ PYTHONUNBUFFERED=1
 EOF
 chmod 600 /opt/myelectricaldata/.env
 cd /opt/myelectricaldata/apps/api
-$STD uv sync --no-dev --no-install-project
-# Upstream hardcodes the Docker paths /app/static and /app/pyproject.toml
-ln -sfn /opt/myelectricaldata/apps/api /app
+$STD uv sync --locked --no-dev --no-install-project
 msg_ok "Configured MyElectricalData Backend"
 
 msg_info "Applying Local Patches"
@@ -54,7 +52,7 @@ cat <<'EOF' >/usr/local/bin/myelectricaldata-patches
 # Applies the local UI patches (e.g. "Passerelle" menu link) to the upstream sources
 REPO=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/patches
 cd /opt/myelectricaldata || exit 0
-for p in lien-passerelle.patch mqtt-scheduler.patch; do
+for p in lien-passerelle.patch; do
   if curl -fsSL "$REPO/$p" -o "/tmp/$p"; then
     if patch -p1 -N --dry-run -s <"/tmp/$p" >/dev/null 2>&1; then
       patch -p1 -N -s <"/tmp/$p" && echo "Applied $p"
