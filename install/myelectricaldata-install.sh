@@ -113,27 +113,9 @@ msg_ok "Built MyElectricalData Frontend"
 
 msg_info "Setting up Version Badge"
 mkdir -p /usr/local/share/myelectricaldata
-cat <<'EOF' >/usr/local/share/myelectricaldata/badge.js
-(function(){var SRC="/lxc-version.json",LINK="https://github.com/Marlboro62/myelectricaldata-proxmox#-mise-%C3%A0-jour",HINT="Tapez update dans la console du conteneur Proxmox",st=null,busy=false;function view(d){var n=d.behind||(d.update?1:0),c=n>=2?"#ef4444":n?"#f59e0b":"#22c55e",t="v"+d.version+(n>=2?" · <b>"+n+" versions de retard</b>":n?" · <b>"+d.latest+" disponible</b>":"");return{n:n,c:c,h:'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:'+c+'"></span>'+t}}function paint(){if(!st||busy)return;busy=true;try{var v=view(st);document.querySelectorAll("[data-app-version]").forEach(function(e){e.style.display="none"});document.querySelectorAll('a[href$="/preferences"]').forEach(function(a){if(a.textContent.indexOf("Préférences")<0)return;var e=a.nextElementSibling;if(!e||!e.classList||!e.classList.contains("med-ver")){e=document.createElement("a");e.className="med-ver";e.target="_blank";e.rel="noopener";e.href=LINK;e.style.cssText="display:block;padding:8px 12px 0;font:12px/1.4 system-ui,sans-serif;text-decoration:none";a.insertAdjacentElement("afterend",e)}if(e.getAttribute("data-h")!==v.h){e.innerHTML=v.h;e.setAttribute("data-h",v.h)}e.style.color=v.n>=2?"#ef4444":v.n?"#f59e0b":"#9ca3af";e.title=v.n?HINT+" (dernière version : "+st.latest+")":"À jour"})}finally{busy=false}}function load(){fetch("/lxc-version.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.version){st=d;paint()}}).catch(function(){})}function start(){load();setInterval(load,9e5);var q=false;new MutationObserver(function(){if(q)return;q=true;requestAnimationFrame(function(){q=false;paint()})}).observe(document.body,{childList:true,subtree:true})}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start()})();
-EOF
+curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/badge.js -o /usr/local/share/myelectricaldata/badge.js
 cat /usr/local/share/myelectricaldata/badge.js >>/opt/myelectricaldata/apps/web/dist/env.js
-cat <<'EOF' >/usr/local/bin/myelectricaldata-version
-#!/usr/bin/env bash
-# Writes installed/latest MyElectricalData versions for the web UI badge
-OUT=/opt/myelectricaldata/apps/web/dist/lxc-version.json
-CUR=$(cat /root/.myelectricaldata 2>/dev/null)
-CUR=${CUR#v}
-[[ -z "$CUR" || ! -d ${OUT%/*} ]] && exit 0
-TAGS=$(curl -fsSL --max-time 15 "https://api.github.com/repos/MyElectricalData/myelectricaldata_new/releases?per_page=50" 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 | grep -v '/' | sed 's/^v//')
-LATEST=$(echo "$TAGS" | head -n1)
-BEHIND=0
-if [[ -n "$LATEST" && "$LATEST" != "$CUR" ]]; then
-  POS=$(echo "$TAGS" | grep -n -x -F "$CUR" | cut -d: -f1)
-  BEHIND=$((${POS:-2} - 1))
-  ((BEHIND < 1)) && BEHIND=1
-fi
-printf '{"version":"%s","latest":"%s","behind":%d}\n' "$CUR" "${LATEST:-$CUR}" "$BEHIND" >"$OUT.tmp" && mv "$OUT.tmp" "$OUT"
-EOF
+curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-version -o /usr/local/bin/myelectricaldata-version
 chmod +x /usr/local/bin/myelectricaldata-version
 cat <<'EOF' >/etc/systemd/system/myelectricaldata-version.service
 [Unit]

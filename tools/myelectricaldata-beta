@@ -22,6 +22,7 @@ ADDON_REPO=Marlboro62/hassio-addons
 ADDON_BRANCH=test-myelectricaldata-new
 ADDON_RAW=https://raw.githubusercontent.com/$ADDON_REPO/$ADDON_BRANCH/myelectricaldata_new
 LXC_PATCHES=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/patches
+LXC_TOOLS=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools
 BETA_FILE=/root/.myelectricaldata-beta
 VERSION_FILE=/root/.myelectricaldata
 
@@ -56,6 +57,14 @@ backup_db() {
   chmod 600 "$file"
 }
 
+# Badge de version de l'interface (mention BÊTA) et son script : dernière version du dépôt
+refresh_badge() {
+  mkdir -p /usr/local/share/myelectricaldata
+  curl -fsSL "$LXC_TOOLS/badge.js" -o "$WORK/badge.js" && mv "$WORK/badge.js" /usr/local/share/myelectricaldata/badge.js || true
+  curl -fsSL "$LXC_TOOLS/myelectricaldata-version" -o "$WORK/med-version" \
+    && install -m 755 "$WORK/med-version" /usr/local/bin/myelectricaldata-version || true
+}
+
 # Prépare dans $WORK la version $1 de MyElectricalData, avec les correctifs bêta si $2 = beta
 prepare() {
   local version=$1 mode=$2 p
@@ -81,6 +90,7 @@ prepare() {
   fi
 
   cp -a "$APP/.env" "$WORK/app/.env"
+  refresh_badge
   log "Compilation de l'interface (quelques minutes)"
   # Sortie de npm gardée dans un journal (avertissements de compilation), affichée seulement en cas d'échec
   if ! (cd "$WORK/app/apps/web" && export VITE_API_BASE_URL=/api && npm ci --no-audit --no-fund --loglevel=error && npm run build --silent) >"$WORK/build.log" 2>&1; then
@@ -168,6 +178,7 @@ if [[ $ACTION == on ]]; then
   prepare "$MED" beta
   deploy "$MED"
   echo "$BETA" >"$BETA_FILE"
+  /usr/local/bin/myelectricaldata-version >/dev/null 2>&1 || true
   log "Bêta $BETA installée. Retour à la version stable : myelectricaldata-beta off"
 else
   STABLE=$(curl -fsSL "https://api.github.com/repos/$UPSTREAM/releases/latest" | grep -m1 '"tag_name"' | cut -d'"' -f4)
@@ -185,5 +196,6 @@ else
   prepare "$STABLE" stable
   deploy "$STABLE"
   rm -f "$BETA_FILE"
+  /usr/local/bin/myelectricaldata-version >/dev/null 2>&1 || true
   log "Version stable $STABLE installée."
 fi

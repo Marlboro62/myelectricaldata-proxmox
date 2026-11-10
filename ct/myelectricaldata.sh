@@ -39,6 +39,13 @@ function update_script() {
     chmod +x /usr/local/bin/import-v1
   fi
 
+  # Badge de version de l'interface (mention BÊTA) : toujours à jour
+  mkdir -p /usr/local/share/myelectricaldata
+  curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/badge.js -o /usr/local/share/myelectricaldata/badge.js.new \
+    && mv /usr/local/share/myelectricaldata/badge.js.new /usr/local/share/myelectricaldata/badge.js
+  curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-version -o /usr/local/bin/myelectricaldata-version.new \
+    && mv /usr/local/bin/myelectricaldata-version.new /usr/local/bin/myelectricaldata-version && chmod +x /usr/local/bin/myelectricaldata-version
+
   # Commande myelectricaldata-beta : toujours mise à jour ; une fois en bêta, « update » suit la bêta
   if curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-beta -o /usr/local/bin/myelectricaldata-beta.new; then
     mv /usr/local/bin/myelectricaldata-beta.new /usr/local/bin/myelectricaldata-beta

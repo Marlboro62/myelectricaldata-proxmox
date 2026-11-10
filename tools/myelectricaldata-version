@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Écrit la version installée et la dernière version de MyElectricalData pour le badge de l'interface
+# (en bas à gauche, sous « Préférences »). En bêta : version de la bêta, comparée à la dernière bêta.
+OUT=/opt/myelectricaldata/apps/web/dist/lxc-version.json
+CUR=$(cat /root/.myelectricaldata 2>/dev/null)
+CUR=${CUR#v}
+[[ -z "$CUR" || ! -d ${OUT%/*} ]] && exit 0
+if [[ -f /root/.myelectricaldata-beta ]]; then
+  CUR=$(cat /root/.myelectricaldata-beta)
+  LATEST=$(curl -fsSL --max-time 15 "https://raw.githubusercontent.com/Marlboro62/hassio-addons/test-myelectricaldata-new/myelectricaldata_new/config.yaml" 2>/dev/null | sed -n 's/^version: "\(.*\)"/\1/p')
+  BEHIND=0
+  [[ -n "$LATEST" && "$LATEST" != "$CUR" ]] && BEHIND=1
+  BETA=true
+else
+  TAGS=$(curl -fsSL --max-time 15 "https://api.github.com/repos/MyElectricalData/myelectricaldata_new/releases?per_page=50" 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 | grep -v '/' | sed 's/^v//')
+  LATEST=$(echo "$TAGS" | head -n1)
+  BEHIND=0
+  if [[ -n "$LATEST" && "$LATEST" != "$CUR" ]]; then
+    POS=$(echo "$TAGS" | grep -n -x -F "$CUR" | cut -d: -f1)
+    BEHIND=$((${POS:-2} - 1))
+    ((BEHIND < 1)) && BEHIND=1
+  fi
+  BETA=false
+fi
+printf '{"version":"%s","latest":"%s","behind":%d,"beta":%s}\n' "$CUR" "${LATEST:-$CUR}" "$BEHIND" "$BETA" >"$OUT.tmp" && mv "$OUT.tmp" "$OUT"
