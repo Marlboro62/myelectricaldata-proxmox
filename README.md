@@ -178,6 +178,8 @@ La version installée est affichée en bas à gauche de l'interface, sous « Pr�
 
 ### Version bêta (tests)
 
+📖 **Tutoriel pas à pas avec captures : [Installer la bêta sur Proxmox](docs/tuto-beta.md)**
+
 La bêta apporte les nouveautés avant leur arrivée dans MyElectricalData, par exemple les **heures creuses saisonnières** (plages différentes l'hiver et l'été). C'est la même bêta que l'add-on Home Assistant « MyElectricalData New Beta ».
 
 **Nouveau conteneur** : choisissez **2) Bêta** pendant l'installation (ou `var_med_beta="yes"` dans la commande). Rien d'autre à faire.
