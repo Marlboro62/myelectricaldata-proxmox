@@ -72,6 +72,11 @@ curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox
 chmod +x /usr/local/bin/import-v1
 msg_ok "Installed import-v1 Command"
 
+msg_info "Installing myelectricaldata-beta Command"
+curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-beta -o /usr/local/bin/myelectricaldata-beta
+chmod +x /usr/local/bin/myelectricaldata-beta
+msg_ok "Installed myelectricaldata-beta Command"
+
 msg_info "Building MyElectricalData Frontend"
 cd /opt/myelectricaldata/apps/web
 export VITE_API_BASE_URL=/api

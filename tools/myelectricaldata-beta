@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+# Passe le conteneur sur la bêta de MyElectricalData new, ou revient à la version stable.
+#
+#   myelectricaldata-beta on       installe la bêta (ou la met à jour)
+#   myelectricaldata-beta off      revient à la dernière version stable
+#   myelectricaldata-beta status   affiche la version installée
+#
+# La bêta est celle de l'add-on Home Assistant « MyElectricalData New Beta »
+# (https://github.com/Marlboro62/hassio-addons, branche test-myelectricaldata-new) : même version
+# de MyElectricalData, avec les mêmes correctifs et nouveautés en test.
+# - une sauvegarde de la base est faite avant chaque changement ;
+# - la nouvelle version est préparée à côté de l'ancienne : si un correctif ne s'applique pas ou si
+#   la compilation échoue, rien n'est remplacé ;
+# - le fichier .env (identifiants API) est conservé ;
+# - une fois en bêta, la commande « update » suit la bêta.
+set -euo pipefail
+
+APP=/opt/myelectricaldata
+DB_NAME=myelectricaldata_client
+UPSTREAM=MyElectricalData/myelectricaldata_new
+ADDON_REPO=Marlboro62/hassio-addons
+ADDON_BRANCH=test-myelectricaldata-new
+ADDON_RAW=https://raw.githubusercontent.com/$ADDON_REPO/$ADDON_BRANCH/myelectricaldata_new
+LXC_PATCHES=https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/patches
+BETA_FILE=/root/.myelectricaldata-beta
+VERSION_FILE=/root/.myelectricaldata
+
+log() { echo "[myelectricaldata-beta] $*"; }
+die() { echo "[myelectricaldata-beta] ERREUR : $*" >&2; exit 1; }
+usage() {
+  echo "Usage : myelectricaldata-beta on | off | status"
+  echo "  on      installe la bêta de MyElectricalData new (ou la met à jour)"
+  echo "  off     revient à la dernière version stable"
+  echo "  status  affiche la version installée"
+  exit "${1:-1}"
+}
+
+installed() { local v; v=$(cat "$VERSION_FILE" 2>/dev/null || true); echo "${v#v}"; }
+
+status() {
+  if [[ -f $BETA_FILE ]]; then
+    echo "MyElectricalData $(installed), bêta $(cat "$BETA_FILE")"
+  else
+    echo "MyElectricalData $(installed) (version stable)"
+  fi
+}
+
+# Version a plus récente que version b
+newer() { [[ "$1" != "$2" && "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" == "$1" ]]; }
+
+backup_db() {
+  local file
+  file="/root/backup-avant-$1-$(date +%Y%m%d-%H%M%S).sql"
+  log "Sauvegarde de la base dans $file"
+  su - postgres -c "pg_dump $DB_NAME" >"$file" || die "sauvegarde de la base impossible, rien n'a été modifié"
+  chmod 600 "$file"
+}
+
+# Prépare dans $WORK la version $1 de MyElectricalData, avec les correctifs bêta si $2 = beta
+prepare() {
+  local version=$1 mode=$2 p
+  log "Téléchargement de MyElectricalData $version"
+  curl -fsSL "https://codeload.github.com/$UPSTREAM/tar.gz/refs/tags/$version" -o "$WORK/src.tar.gz" \
+    || die "téléchargement de la version $version impossible"
+  mkdir -p "$WORK/app"
+  tar -xzf "$WORK/src.tar.gz" -C "$WORK/app" --strip-components=1
+  command -v patch >/dev/null || { apt-get install -y -qq patch >/dev/null || die "installation de patch impossible"; }
+
+  if [[ $mode == beta ]]; then
+    for p in "${PATCHES[@]}"; do
+      curl -fsSL "$ADDON_RAW/patches/$p" -o "$WORK/$p" || die "téléchargement du correctif $p impossible"
+      (cd "$WORK/app" && patch -p1 -N -s --no-backup-if-mismatch --dry-run <"$WORK/$p" >/dev/null) \
+        || die "le correctif $p ne s'applique pas sur la version $version : installation annulée, rien n'a été modifié"
+      (cd "$WORK/app" && patch -p1 -N -s --no-backup-if-mismatch <"$WORK/$p") && log "Correctif appliqué : $p"
+    done
+  fi
+  # Lien « Passerelle » du menu (correctif propre au conteneur), ignoré s'il ne s'applique pas
+  if curl -fsSL "$LXC_PATCHES/lien-passerelle.patch" -o "$WORK/lien-passerelle.patch" \
+    && (cd "$WORK/app" && patch -p1 -N -s --no-backup-if-mismatch --dry-run <"$WORK/lien-passerelle.patch" >/dev/null 2>&1); then
+    (cd "$WORK/app" && patch -p1 -N -s --no-backup-if-mismatch <"$WORK/lien-passerelle.patch")
+  fi
+
+  cp -a "$APP/.env" "$WORK/app/.env"
+  log "Compilation de l'interface (quelques minutes)"
+  (cd "$WORK/app/apps/web" && export VITE_API_BASE_URL=/api && npm ci --no-audit --no-fund --loglevel=error >/dev/null && npm run build >/dev/null) \
+    || die "compilation de l'interface impossible, rien n'a été modifié"
+  if [[ -f /usr/local/share/myelectricaldata/badge.js ]]; then
+    cat /usr/local/share/myelectricaldata/badge.js >>"$WORK/app/apps/web/dist/env.js"
+  fi
+}
+
+# Rétablit l'installation précédente (gardée dans $APP.old)
+rollback() {
+  log "$1 : retour à l'installation précédente"
+  systemctl stop myelectricaldata || true
+  rm -rf "$APP" && mv "$APP.old" "$APP"
+  echo "$PREVIOUS" >"$VERSION_FILE"
+  systemctl start myelectricaldata || true
+  die "$1 (journalctl -u myelectricaldata). Installation précédente rétablie ; sauvegarde de la base dans /root"
+}
+
+# L'API répond-elle ? (jusqu'à 2 minutes : migrations de la base au démarrage)
+api_up() {
+  local i
+  for i in $(seq 1 60); do
+    curl -fsS -m 3 http://127.0.0.1:8000/ping >/dev/null 2>&1 && return 0
+    sleep 2
+  done
+  return 1
+}
+
+# Remplace l'installation par celle préparée dans $WORK, puis redémarre
+deploy() {
+  local version=$1
+  log "Remplacement de l'installation"
+  systemctl stop myelectricaldata
+  rm -rf "$APP.old"
+  mv "$APP" "$APP.old"
+  mv "$WORK/app" "$APP"
+  echo "$version" >"$VERSION_FILE"
+  # L'environnement Python se crée à son emplacement définitif (chemins absolus dans .venv/bin)
+  log "Installation des dépendances du backend"
+  (cd "$APP/apps/api" && uv sync --locked --no-dev --no-install-project -q) || rollback "installation du backend impossible"
+  systemctl start myelectricaldata || rollback "démarrage impossible"
+  api_up || rollback "l'API ne répond pas après le démarrage"
+  rm -rf "$APP.old"
+  systemctl reload nginx || true
+  /usr/local/bin/myelectricaldata-version >/dev/null 2>&1 || true
+}
+
+[[ $EUID -eq 0 ]] || die "à lancer en root, dans la console du conteneur"
+[[ -d $APP && -f $APP/.env ]] || die "MyElectricalData n'est pas installé dans $APP"
+command -v uv >/dev/null || die "uv introuvable"
+command -v npm >/dev/null || die "npm introuvable"
+
+ACTION=${1:-}
+case "$ACTION" in
+  status) status; exit 0 ;;
+  on | off) ;;
+  -h | --help) usage 0 ;;
+  *) usage ;;
+esac
+
+PREVIOUS=$(installed)
+WORK=$(mktemp -d /opt/myelectricaldata-new.XXXXXX)
+trap 'rm -rf "$WORK"' EXIT
+
+if [[ $ACTION == on ]]; then
+  MED=$(curl -fsSL "$ADDON_RAW/Dockerfile" | sed -n 's/^ARG MED_VERSION=//p')
+  BETA=$(curl -fsSL "$ADDON_RAW/config.yaml" | sed -n 's/^version: "\(.*\)"/\1/p')
+  [[ -n $MED && -n $BETA ]] || die "version de la bêta introuvable (GitHub injoignable ?)"
+  mapfile -t PATCHES < <(curl -fsSL "https://api.github.com/repos/$ADDON_REPO/contents/myelectricaldata_new/patches?ref=$ADDON_BRANCH" \
+    | grep '"name"' | cut -d'"' -f4 | grep '\.patch$' | sort)
+  ((${#PATCHES[@]})) || die "liste des correctifs de la bêta introuvable"
+  if [[ -f $BETA_FILE && "$(cat "$BETA_FILE")" == "$BETA" && "$PREVIOUS" == "$MED" ]]; then
+    log "La bêta $BETA est déjà installée."
+    exit 0
+  fi
+  # Une base migrée par une version plus récente ne peut pas revenir en arrière
+  if [[ -n $PREVIOUS ]] && newer "$PREVIOUS" "$MED"; then
+    die "la version installée ($PREVIOUS) est plus récente que celle de la bêta ($MED) : attendez la prochaine bêta"
+  fi
+  log "Bêta $BETA : MyElectricalData $MED et ${#PATCHES[@]} correctifs"
+  backup_db beta
+  prepare "$MED" beta
+  deploy "$MED"
+  echo "$BETA" >"$BETA_FILE"
+  log "Bêta $BETA installée. Retour à la version stable : myelectricaldata-beta off"
+else
+  STABLE=$(curl -fsSL "https://api.github.com/repos/$UPSTREAM/releases/latest" | grep -m1 '"tag_name"' | cut -d'"' -f4)
+  STABLE=${STABLE#v}
+  [[ -n $STABLE ]] || die "dernière version stable introuvable (GitHub injoignable ?)"
+  if [[ ! -f $BETA_FILE && "$PREVIOUS" == "$STABLE" ]]; then
+    log "La version stable $STABLE est déjà installée."
+    exit 0
+  fi
+  if [[ -n $PREVIOUS ]] && newer "$PREVIOUS" "$STABLE"; then
+    die "la version installée ($PREVIOUS) est plus récente que la dernière stable ($STABLE) : attendez la prochaine version"
+  fi
+  log "Retour à la version stable $STABLE"
+  backup_db stable
+  prepare "$STABLE" stable
+  deploy "$STABLE"
+  rm -f "$BETA_FILE"
+  log "Version stable $STABLE installée."
+fi

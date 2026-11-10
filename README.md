@@ -175,6 +175,29 @@ Le script vérifie la dernière version de MyElectricalData, la télécharge, co
 
 La version installée est affichée en bas à gauche de l'interface, sous « Préférences » : point vert si à jour, orange avec 1 version de retard, rouge à partir de 2. Elle s'affiche aussi à la connexion de la console du conteneur.
 
+### Version bêta (tests)
+
+La bêta apporte les nouveautés avant leur arrivée dans MyElectricalData, par exemple les **heures creuses saisonnières** (plages différentes l'hiver et l'été). C'est la même bêta que l'add-on Home Assistant « MyElectricalData New Beta ».
+
+Dans la console du conteneur :
+
+```bash
+# Conteneur installé avant cette commande : la récupérer une fois
+curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-beta -o /usr/local/bin/myelectricaldata-beta
+chmod +x /usr/local/bin/myelectricaldata-beta
+
+myelectricaldata-beta on       # passer en bêta (ou la mettre à jour)
+myelectricaldata-beta status   # version installée
+myelectricaldata-beta off      # revenir à la version stable
+```
+
+- Une sauvegarde de la base est faite avant chaque changement, dans `/root/backup-avant-beta-<date>.sql` (ou `backup-avant-stable-…`).
+- La nouvelle version est préparée à côté de l'ancienne : si un correctif ne s'applique pas, si la compilation échoue ou si le service ne redémarre pas, l'installation précédente est gardée ou rétablie.
+- Votre `.env` (identifiants API) est conservé.
+- Une fois en bêta, `update` suit la bêta. Le retour à la version stable n'est possible que si elle n'est pas plus ancienne que la bêta (sinon, attendez la prochaine version).
+
+Faites aussi une sauvegarde Proxmox (vzdump) du conteneur avant de passer en bêta. Retours et problèmes : [issues GitHub](https://github.com/Marlboro62/myelectricaldata-proxmox/issues).
+
 ---
 
 ## 📥 Reprendre l'historique de la v1

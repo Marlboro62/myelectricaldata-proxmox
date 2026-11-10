@@ -39,6 +39,16 @@ function update_script() {
     chmod +x /usr/local/bin/import-v1
   fi
 
+  # Commande myelectricaldata-beta : toujours mise à jour ; une fois en bêta, « update » suit la bêta
+  if curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/tools/myelectricaldata-beta -o /usr/local/bin/myelectricaldata-beta.new; then
+    mv /usr/local/bin/myelectricaldata-beta.new /usr/local/bin/myelectricaldata-beta
+    chmod +x /usr/local/bin/myelectricaldata-beta
+  fi
+  if [[ -f /root/.myelectricaldata-beta ]]; then
+    /usr/local/bin/myelectricaldata-beta on
+    exit
+  fi
+
   if check_for_gh_release "myelectricaldata" "MyElectricalData/myelectricaldata_new"; then
     msg_info "Stopping MyElectricalData"
     systemctl stop myelectricaldata
