@@ -82,8 +82,11 @@ prepare() {
 
   cp -a "$APP/.env" "$WORK/app/.env"
   log "Compilation de l'interface (quelques minutes)"
-  (cd "$WORK/app/apps/web" && export VITE_API_BASE_URL=/api && npm ci --no-audit --no-fund --loglevel=error >/dev/null && npm run build >/dev/null) \
-    || die "compilation de l'interface impossible, rien n'a été modifié"
+  # Sortie de npm gardée dans un journal (avertissements de compilation), affichée seulement en cas d'échec
+  if ! (cd "$WORK/app/apps/web" && export VITE_API_BASE_URL=/api && npm ci --no-audit --no-fund --loglevel=error && npm run build --silent) >"$WORK/build.log" 2>&1; then
+    tail -n 30 "$WORK/build.log" >&2
+    die "compilation de l'interface impossible, rien n'a été modifié"
+  fi
   if [[ -f /usr/local/share/myelectricaldata/badge.js ]]; then
     cat /usr/local/share/myelectricaldata/badge.js >>"$WORK/app/apps/web/dist/env.js"
   fi
