@@ -22,7 +22,34 @@ PG_DB_NAME="myelectricaldata_client" PG_DB_USER="myelectricaldata" setup_postgre
 PYTHON_VERSION="3.11" setup_uv
 NODE_VERSION="22" setup_nodejs
 
-fetch_and_deploy_gh_release "myelectricaldata" "MyElectricalData/myelectricaldata_new" "tarball"
+if [[ "${var_med_beta:-no}" == "yes" ]]; then
+  # Bêta : version de MyElectricalData suivie par l'add-on « MyElectricalData New Beta », avec ses
+  # correctifs (https://github.com/Marlboro62/hassio-addons, branche test-myelectricaldata-new)
+  msg_info "Fetching MyElectricalData Beta"
+  ADDON_RAW="https://raw.githubusercontent.com/Marlboro62/hassio-addons/test-myelectricaldata-new/myelectricaldata_new"
+  MED_VERSION=$(curl -fsSL "$ADDON_RAW/Dockerfile" | sed -n 's/^ARG MED_VERSION=//p')
+  MED_BETA=$(curl -fsSL "$ADDON_RAW/config.yaml" | sed -n 's/^version: "\(.*\)"/\1/p')
+  mapfile -t MED_PATCHES < <(curl -fsSL "https://api.github.com/repos/Marlboro62/hassio-addons/contents/myelectricaldata_new/patches?ref=test-myelectricaldata-new" | grep '"name"' | cut -d'"' -f4 | grep '\.patch$' | sort)
+  if [[ -z "$MED_VERSION" || -z "$MED_BETA" || ${#MED_PATCHES[@]} -eq 0 ]]; then
+    msg_error "Beta version not found (GitHub unreachable?)"
+    exit 1
+  fi
+  mkdir -p /opt/myelectricaldata
+  curl -fsSL "https://codeload.github.com/MyElectricalData/myelectricaldata_new/tar.gz/refs/tags/$MED_VERSION" | tar -xz -C /opt/myelectricaldata --strip-components=1
+  cd /opt/myelectricaldata
+  for p in "${MED_PATCHES[@]}"; do
+    if ! curl -fsSL "$ADDON_RAW/patches/$p" -o "/tmp/$p" || ! patch -p1 -N -s --no-backup-if-mismatch <"/tmp/$p" >/dev/null; then
+      msg_error "Beta patch $p does not apply on MyElectricalData $MED_VERSION"
+      exit 1
+    fi
+    rm -f "/tmp/$p"
+  done
+  echo "$MED_VERSION" >/root/.myelectricaldata
+  echo "$MED_BETA" >/root/.myelectricaldata-beta
+  msg_ok "Fetched MyElectricalData $MED_VERSION (beta $MED_BETA, ${#MED_PATCHES[@]} patches)"
+else
+  fetch_and_deploy_gh_release "myelectricaldata" "MyElectricalData/myelectricaldata_new" "tarball"
+fi
 
 msg_info "Configuring MyElectricalData Backend"
 cat <<EOF >/opt/myelectricaldata/.env
@@ -203,7 +230,9 @@ if [[ -f /root/.myelectricaldata ]]; then
   _med_cur=$(cat /root/.myelectricaldata)
   _med_new=$(curl -fsSL --max-time 3 https://api.github.com/repos/MyElectricalData/myelectricaldata_new/releases/latest 2>/dev/null | grep -m1 '"tag_name"' | cut -d'"' -f4)
   echo -e "    📦 MyElectricalData : ${_med_cur#v}"
-  if [[ -n "$_med_new" && "${_med_new#v}" != "${_med_cur#v}" ]]; then
+  if [[ -f /root/.myelectricaldata-beta ]]; then
+    echo -e "    🧪 Bêta $(cat /root/.myelectricaldata-beta) (mise à jour : update ; version stable : myelectricaldata-beta off)"
+  elif [[ -n "$_med_new" && "${_med_new#v}" != "${_med_cur#v}" ]]; then
     echo -e "    ⬆️  Mise à jour disponible : ${_med_new#v} (tapez : update)"
   else
     echo -e "    ✅ MyElectricalData est à jour"

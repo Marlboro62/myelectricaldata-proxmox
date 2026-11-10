@@ -152,7 +152,15 @@ if command -v pveversion >/dev/null 2>&1; then
     read -rsp "MyElectricalData Client Secret: " var_med_client_secret
     echo
   fi
-  export var_med_client_id var_med_client_secret
+  if [[ -z "${var_med_beta:-}" ]]; then
+    echo "Version à installer :"
+    echo "  1) Stable (recommandée)"
+    echo "  2) Bêta : nouveautés en test (celle de l'add-on MyElectricalData New Beta)"
+    read -rp "Votre choix [1] : " _med_choice
+    [[ "$_med_choice" == "2" ]] && var_med_beta="yes" || var_med_beta="no"
+    unset _med_choice
+  fi
+  export var_med_client_id var_med_client_secret var_med_beta
 fi
 
 start

@@ -78,8 +78,9 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricald
 1. Le script vous demande d'abord votre **Client ID**, puis votre **Client Secret** : collez-les et validez avec **Entrée**
    - Le secret ne s'affiche pas pendant la saisie, c'est normal (comme un mot de passe)
    - Vous pouvez laisser vide et les ajouter plus tard (voir [Modifier les identifiants API](#modifier-les-identifiants-api))
-2. Choisissez **Default Install** (ou **Advanced Install** pour changer l'ID, le stockage, l'IP, la RAM…)
-3. Patientez quelques minutes (la compilation de l'interface est l'étape la plus longue)
+2. Choisissez la version : **1** (stable, recommandée) ou **2** (bêta, voir [Version bêta](#version-bêta-tests)) ; **Entrée** seule installe la stable
+3. Choisissez **Default Install** (ou **Advanced Install** pour changer l'ID, le stockage, l'IP, la RAM…)
+4. Patientez quelques minutes (la compilation de l'interface est l'étape la plus longue)
 
 ```
 🌐  http://192.168.1.XXX:8100
@@ -90,7 +91,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricald
 Vous pouvez fournir les identifiants directement dans la commande :
 
 ```bash
-var_med_client_id="cli_xxxxxxxx" var_med_client_secret="xxxxxxxx" \
+var_med_client_id="cli_xxxxxxxx" var_med_client_secret="xxxxxxxx" var_med_beta="no" \
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Marlboro62/myelectricaldata-proxmox/main/ct/myelectricaldata.sh)"
 ```
 
@@ -179,7 +180,9 @@ La version installée est affichée en bas à gauche de l'interface, sous « Pr�
 
 La bêta apporte les nouveautés avant leur arrivée dans MyElectricalData, par exemple les **heures creuses saisonnières** (plages différentes l'hiver et l'été). C'est la même bêta que l'add-on Home Assistant « MyElectricalData New Beta ».
 
-Dans la console du conteneur :
+**Nouveau conteneur** : choisissez **2) Bêta** pendant l'installation (ou `var_med_beta="yes"` dans la commande). Rien d'autre à faire.
+
+**Conteneur déjà installé**, dans la console du conteneur :
 
 ```bash
 # Conteneur installé avant cette commande : la récupérer une fois
